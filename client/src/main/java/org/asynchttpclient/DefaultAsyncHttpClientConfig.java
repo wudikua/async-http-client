@@ -30,6 +30,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Properties;
 import java.util.concurrent.ThreadFactory;
+import java.util.concurrent.atomic.AtomicInteger;
 
 import org.asynchttpclient.channel.pool.KeepAliveStrategy;
 import org.asynchttpclient.filter.IOExceptionFilter;
@@ -515,6 +516,8 @@ public class DefaultAsyncHttpClientConfig implements AsyncHttpClientConfig {
      * Builder for an {@link AsyncHttpClient}
      */
     public static class Builder {
+        
+        private static final AtomicInteger COUNTER = new AtomicInteger();
 
         // http
         private boolean followRedirect = defaultFollowRedirect();
@@ -564,7 +567,7 @@ public class DefaultAsyncHttpClientConfig implements AsyncHttpClientConfig {
         private final List<IOExceptionFilter> ioExceptionFilters = new LinkedList<>();
 
         // internals
-        private String threadPoolName = defaultThreadPoolName();
+        private String threadPoolName = defaultThreadPoolName() + COUNTER.getAndIncrement();
         private int httpClientCodecMaxInitialLineLength = defaultHttpClientCodecMaxInitialLineLength();
         private int httpClientCodecMaxHeaderSize = defaultHttpClientCodecMaxHeaderSize();
         private int httpClientCodecMaxChunkSize = defaultHttpClientCodecMaxChunkSize();
