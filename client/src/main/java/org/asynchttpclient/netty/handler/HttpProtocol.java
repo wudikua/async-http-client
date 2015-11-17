@@ -466,32 +466,32 @@ public final class HttpProtocol extends Protocol {
         return false;
     }
 
-    private boolean exitAfterHandlingStatus(Channel channel, NettyResponseFuture<?> future, HttpResponse response, AsyncHandler<?> handler, NettyResponseStatus status)
+    private boolean exitAfterHandlingStatus(Channel channel, NettyResponseFuture<?> future, HttpResponse response, AsyncHandler<?> handler, NettyResponseStatus status, HttpRequest httpRequest)
             throws IOException, Exception {
         if (!future.getAndSetStatusReceived(true) && handler.onStatusReceived(status) != State.CONTINUE) {
-            finishUpdate(future, channel, HttpHeaders.isTransferEncodingChunked(response));
+            finishUpdate(future, channel, HttpHeaders.isTransferEncodingChunked(httpRequest) || HttpHeaders.isTransferEncodingChunked(response));
             return true;
         }
         return false;
     }
 
-    private boolean exitAfterHandlingHeaders(Channel channel, NettyResponseFuture<?> future, HttpResponse response, AsyncHandler<?> handler, NettyResponseHeaders responseHeaders)
+    private boolean exitAfterHandlingHeaders(Channel channel, NettyResponseFuture<?> future, HttpResponse response, AsyncHandler<?> handler, NettyResponseHeaders responseHeaders, HttpRequest httpRequest)
             throws IOException, Exception {
         if (!response.headers().isEmpty() && handler.onHeadersReceived(responseHeaders) != State.CONTINUE) {
-            finishUpdate(future, channel, HttpHeaders.isTransferEncodingChunked(response));
+            finishUpdate(future, channel, HttpHeaders.isTransferEncodingChunked(httpRequest) ||  HttpHeaders.isTransferEncodingChunked(response));
             return true;
         }
         return false;
     }
 
-    private boolean exitAfterHandlingReactiveStreams(Channel channel, NettyResponseFuture<?> future, HttpResponse response, AsyncHandler<?> handler) throws IOException {
+    private boolean exitAfterHandlingReactiveStreams(Channel channel, NettyResponseFuture<?> future, HttpResponse response, AsyncHandler<?> handler, HttpRequest httpRequest) throws IOException {
         if (handler instanceof StreamedAsyncHandler) {
             StreamedAsyncHandler<?> streamedAsyncHandler = (StreamedAsyncHandler<?>) handler;
             StreamedResponsePublisher publisher = new StreamedResponsePublisher(channel.eventLoop(), channelManager, future, channel);
             channel.pipeline().addLast(channel.eventLoop(), "streamedAsyncHandler", publisher);
             Channels.setAttribute(channel, publisher);
             if (streamedAsyncHandler.onStream(publisher) != State.CONTINUE) {
-                finishUpdate(future, channel, HttpHeaders.isTransferEncodingChunked(response));
+                finishUpdate(future, channel, HttpHeaders.isTransferEncodingChunked(httpRequest) ||  HttpHeaders.isTransferEncodingChunked(response));
                 return true;
             }
         }
@@ -522,8 +522,9 @@ public final class HttpProtocol extends Protocol {
                 exitAfterHandling100(channel, future, statusCode) || //
                 exitAfterHandlingRedirect(channel, future, response, request, statusCode, realm) || //
                 exitAfterHandlingConnect(channel, future, request, proxyServer, statusCode, httpRequest) || //
-                exitAfterHandlingStatus(channel, future, response, handler, status) || //
-                exitAfterHandlingHeaders(channel, future, response, handler, responseHeaders) || exitAfterHandlingReactiveStreams(channel, future, response, handler);
+                exitAfterHandlingStatus(channel, future, response, handler, status, httpRequest) || //
+                exitAfterHandlingHeaders(channel, future, response, handler, responseHeaders, httpRequest) || //
+                exitAfterHandlingReactiveStreams(channel, future, response, handler, httpRequest);
     }
 
     private void handleChunk(HttpContent chunk,//
