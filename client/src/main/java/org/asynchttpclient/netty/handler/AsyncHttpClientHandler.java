@@ -63,6 +63,8 @@ public class AsyncHttpClientHandler extends ChannelInboundHandlerAdapter {
     @Override
     public void channelRead(final ChannelHandlerContext ctx, Object msg) throws Exception {
 
+        LOGGER.debug("Channel {} read", ctx.channel());
+
         Channel channel = ctx.channel();
         Object attribute = Channels.getAttribute(channel);
 
@@ -85,7 +87,7 @@ public class AsyncHttpClientHandler extends ChannelInboundHandlerAdapter {
 
                 StreamedResponsePublisher publisher = (StreamedResponsePublisher) attribute;
 
-                if(msg instanceof HttpContent) {
+                if (msg instanceof HttpContent) {
                     ByteBuf content = ((HttpContent) msg).content();
                     // Republish as a HttpResponseBodyPart
                     if (content.readableBytes() > 0) {
@@ -119,6 +121,8 @@ public class AsyncHttpClientHandler extends ChannelInboundHandlerAdapter {
     }
 
     public void channelInactive(ChannelHandlerContext ctx) throws Exception {
+
+        LOGGER.debug("Channel {} inactive", ctx.channel());
 
         if (requestSender.isClosed())
             return;
@@ -158,6 +162,9 @@ public class AsyncHttpClientHandler extends ChannelInboundHandlerAdapter {
 
     @Override
     public void exceptionCaught(ChannelHandlerContext ctx, Throwable e) throws Exception {
+
+        LOGGER.debug("Channel {} exceptionCaught", ctx.channel());
+
         Throwable cause = getCause(e.getCause());
 
         if (cause instanceof PrematureChannelClosureException || cause instanceof ClosedChannelException)
@@ -221,11 +228,17 @@ public class AsyncHttpClientHandler extends ChannelInboundHandlerAdapter {
 
     @Override
     public void channelActive(ChannelHandlerContext ctx) throws Exception {
+
+        LOGGER.debug("Channel {} channelActive", ctx.channel());
+
         ctx.read();
     }
 
     @Override
     public void channelReadComplete(ChannelHandlerContext ctx) throws Exception {
+
+        LOGGER.debug("Channel {} channelReadComplete", ctx.channel());
+
         if (!isHandledByReactiveStreams(ctx)) {
             ctx.read();
         } else {
