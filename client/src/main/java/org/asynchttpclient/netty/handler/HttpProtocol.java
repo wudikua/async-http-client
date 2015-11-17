@@ -179,7 +179,8 @@ public final class HttpProtocol extends Protocol {
             final Request request,//
             int statusCode,//
             Realm realm,//
-            ProxyServer proxyServer) {
+            ProxyServer proxyServer,//
+            HttpRequest httpRequest) {
 
         if (statusCode != UNAUTHORIZED.code())
             return false;
@@ -291,7 +292,7 @@ public final class HttpProtocol extends Protocol {
         final Request nextRequest = new RequestBuilder(future.getCurrentRequest()).setHeaders(requestHeaders).build();
 
         logger.debug("Sending authentication to {}", request.getUri());
-        if (future.isKeepAlive() && !HttpHeaders.isTransferEncodingChunked(response)) {
+        if (future.isKeepAlive() && !HttpHeaders.isTransferEncodingChunked(httpRequest) && !HttpHeaders.isTransferEncodingChunked(response)) {
             future.setReuseChannel(true);
             requestSender.drainChannelAndExecuteNextRequest(channel, future, nextRequest);
         } else {
@@ -308,7 +309,8 @@ public final class HttpProtocol extends Protocol {
             HttpResponse response,//
             Request request,//
             int statusCode,//
-            ProxyServer proxyServer) {
+            ProxyServer proxyServer,//
+            HttpRequest httpRequest) {
 
         if (statusCode != PROXY_AUTHENTICATION_REQUIRED.code())
             return false;
@@ -425,7 +427,7 @@ public final class HttpProtocol extends Protocol {
         final Request nextRequest = nextRequestBuilder.build();
 
         logger.debug("Sending proxy authentication to {}", request.getUri());
-        if (future.isKeepAlive() && !HttpHeaders.isTransferEncodingChunked(response)) {
+        if (future.isKeepAlive() && !HttpHeaders.isTransferEncodingChunked(httpRequest) && !HttpHeaders.isTransferEncodingChunked(response)) {
             future.setConnectAllowed(true);
             future.setReuseChannel(true);
             requestSender.drainChannelAndExecuteNextRequest(channel, future, nextRequest);
@@ -515,8 +517,8 @@ public final class HttpProtocol extends Protocol {
         NettyResponseHeaders responseHeaders = new NettyResponseHeaders(response.headers());
 
         return exitAfterProcessingFilters(channel, future, handler, status, responseHeaders) || //
-                exitAfterHandling401(channel, future, response, request, statusCode, realm, proxyServer) || //
-                exitAfterHandling407(channel, future, response, request, statusCode, proxyServer) || //
+                exitAfterHandling401(channel, future, response, request, statusCode, realm, proxyServer, httpRequest) || //
+                exitAfterHandling407(channel, future, response, request, statusCode, proxyServer, httpRequest) || //
                 exitAfterHandling100(channel, future, statusCode) || //
                 exitAfterHandlingRedirect(channel, future, response, request, statusCode, realm) || //
                 exitAfterHandlingConnect(channel, future, request, proxyServer, statusCode, httpRequest) || //
