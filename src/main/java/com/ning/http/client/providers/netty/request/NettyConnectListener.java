@@ -74,6 +74,9 @@ public final class NettyConnectListener<T> implements ChannelFutureListener {
 
         if (future.isDone()) {
             abortChannelPreemption();
+			if (future.isCancelled()) {
+				channelManager.closeChannel(channel);
+			}
             return;
         }
 
